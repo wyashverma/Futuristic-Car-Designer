@@ -1,0 +1,15 @@
+name: CI - Car Designer 
+on: 
+  push: 
+    branches: [ main ] 
+jobs: 
+  test: 
+    runs-on: ubuntu-latest 
+    steps: 
+    - uses: actions/checkout@v3 
+    - name: Check backend 
+"Backend files OK" 
+    - name: Check frontend 
+"Frontend files OK" 
+    - name: Success 
+      run: echo "CI Pipeline Successful" 

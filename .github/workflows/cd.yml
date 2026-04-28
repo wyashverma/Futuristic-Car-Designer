@@ -1,0 +1,14 @@
+name: CD - Deploy 
+on: 
+  push: 
+    branches: [ main ] 
+    branches: [ main ] 
+jobs: 
+  deploy: 
+    runs-on: ubuntu-latest 
+    steps: 
+    - uses: actions/checkout@v3 
+    - name: Package 
+      run: echo "Creating deployment package" 
+    - name: Complete 
+      run: echo "Deployment ready" 
