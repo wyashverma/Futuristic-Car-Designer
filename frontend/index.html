@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title> Futuristic Car Designer - AI-Powered Automotive Design</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon"></span>
+                    <span class="logo-text">CarDesigner AI</span>
+                </div>
+                <button class="new-chat-btn" id="newChatBtn">
+                    <span></span> New Design
+                </button>
+            </div>
+            
+            <div class="chat-history">
+                <h3>Recent Designs</h3>
+                <div id="historyList" class="history-list">
+                    <!-- Dynamic history will appear here -->
+                    <div class="history-placeholder">No designs yet. Start creating!</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <button class="theme-toggle" id="themeToggle">
+                     Dark Mode
+                </button>
+                <div class="version">v2.0 - Agentic AI</div>
+            </div>
+        </aside>
+        
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <div class="chat-header">
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+                <h1>Futuristic Car Designer</h1>
+                <div class="header-stats">
+                    <span class="badge"> Agentic AI</span>
+                    <span class="badge"> Multi-View</span>
+                </div>
+            </div>
+            
+            <!-- Messages Container -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- Welcome Message -->
+                <div class="message assistant">
+                    <div class="avatar"></div>
+                    <div class="message-content">
+                        <h3>Welcome to Futuristic Car Designer!</h3>
+                        <p>I'm your AI automotive engineer. Describe your dream car, and I'll:</p>
+                        <ul>
+                            <li> Perform deep R&D analysis</li>
+                            <li> Generate 4 professional views (Top, Bottom, Left, Right)</li>
+                            <li> Provide engineering specifications & improvements</li>
+                            <li> Suggest advanced AI features</li>
+                        </ul>
+                        <p><strong>Try these examples:</strong></p>
+                        <div class="example-chips">
+                            <button class="example-chip">Electric hypercar with 2000hp</button>
+                            <button class="example-chip">Luxury SUV for families with 500km range</button>
+                            <button class="example-chip">Track-focused sports car under 1000kg</button>
+                            <button class="example-chip">Flying car for urban commuting</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Container -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="userInput" 
+                        placeholder="Describe your futuristic car... (e.g., 'Design an electric hypercar with advanced aerodynamics and AI cockpit')"
+                        rows="1"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn">
+                        <span></span> Generate
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span>Press Enter to send, Shift+Enter for new line</span>
+                </div>
+            </div>
+            
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <h3>AI is Designing Your Car...</h3>
+                    <div class="loading-steps">
+                        <div class="step" id="step1"> Analyzing requirements</div>
+                        <div class="step" id="step2"> Running R&D analysis</div>
+                        <div class="step" id="step3"> Generating 4 views</div>
+                        <div class="step" id="step4"> Finalizing design</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Marked.js for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
