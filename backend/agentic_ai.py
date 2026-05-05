@@ -2,6 +2,7 @@ from google import genai
 from typing import Dict, Any
 import json
 import re
+import time
 from config import Config
 
 class AgenticAISystem:
@@ -14,6 +15,50 @@ class AgenticAISystem:
         """Initialize the AI system with Gemini"""
         self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
         self.model_name = 'gemini-2.5-flash'
+        self.max_retries = 3
+        self.base_delay = 2  # Start with 2 second delay
+    
+    def _call_api_with_retry(self, prompt: str, max_retries: int = None) -> str:
+        """
+        Call Gemini API with exponential backoff retry logic
+        Handles 503 UNAVAILABLE errors gracefully
+        """
+        if max_retries is None:
+            max_retries = self.max_retries
+        
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt
+                )
+                return response.text
+            except Exception as e:
+                last_error = e
+                error_str = str(e)
+                
+                # Check if it's a 503 or rate limit error
+                is_unavailable = '503' in error_str or 'UNAVAILABLE' in error_str or 'high demand' in error_str
+                is_rate_limit = '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str
+                
+                if not (is_unavailable or is_rate_limit):
+                    # If it's not a temporary error, fail immediately
+                    raise
+                
+                if attempt < max_retries - 1:
+                    # Exponential backoff: 2s, 4s, 8s
+                    delay = self.base_delay * (2 ** attempt)
+                    print(f"API unavailable (attempt {attempt + 1}/{max_retries}). Retrying in {delay}s...")
+                    time.sleep(delay)
+                else:
+                    print(f"API still unavailable after {max_retries} retries. Failing gracefully.")
+        
+        # If all retries failed, return a helpful error message
+        if last_error:
+            raise Exception(f"Service temporarily unavailable after {max_retries} attempts: {str(last_error)}")
+        raise Exception("API call failed after all retries")
         
     def research_and_analyze(self, user_prompt: str) -> Dict[str, Any]:
         """
@@ -54,16 +99,14 @@ class AgenticAISystem:
         """
         
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=analysis_prompt
-            )
+            response_text = self._call_api_with_retry(analysis_prompt)
             # Extract JSON from response
-            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
             return {}
-        except:
+        except Exception as e:
+            print(f"Initial analysis failed: {str(e)}")
             return {}
     
     def _research_phase(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
@@ -111,12 +154,10 @@ class AgenticAISystem:
         """
         
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=research_prompt
-            )
-            return {'research_output': response.text}
+            response_text = self._call_api_with_retry(research_prompt)
+            return {'research_output': response_text}
         except Exception as e:
+            print(f"Research phase failed: {str(e)}")
             return {'research_output': f"Research error: {str(e)}"}
     
     def _engineering_analysis(self, research: Dict[str, Any]) -> Dict[str, Any]:
@@ -142,12 +183,10 @@ class AgenticAISystem:
         """
         
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=eng_prompt
-            )
-            return {'engineering_recommendations': response.text}
-        except:
+            response_text = self._call_api_with_retry(eng_prompt)
+            return {'engineering_recommendations': response_text}
+        except Exception as e:
+            print(f"Engineering analysis failed: {str(e)}")
             return {}
     
     def _synthesize_results(self, recommendations: Dict[str, Any]) -> Dict[str, Any]:
@@ -191,17 +230,15 @@ class AgenticAISystem:
         """
         
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=synthesis_prompt
-            )
+            response_text = self._call_api_with_retry(synthesis_prompt)
             return {
-                'description': response.text,
+                'description': response_text,
                 'recommendations': eng_rec
             }
         except Exception as e:
+            error_msg = str(e)
             return {
-                'description': f"Error generating description: {str(e)}",
+                'description': f"Error generating description: {error_msg}",
                 'recommendations': ''
             }
     

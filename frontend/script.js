@@ -1,12 +1,34 @@
 // API Configuration
 const API_BASE_URL = 'http://127.0.0.1:5000'; // Changed to 127.0.0.1 for better compatibility
 let chatHistory = [];
-let currentSessionId = localStorage.getItem('chatSessionId') || generateSessionId();
+
+// Safe localStorage getter
+function safeGetStorage(key, defaultValue = null) {
+    try {
+        return localStorage.getItem(key) || defaultValue;
+    } catch (e) {
+        console.warn(`Storage access blocked for ${key}:`, e.message);
+        return defaultValue;
+    }
+}
+
+// Safe localStorage setter
+function safeSetStorage(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (e) {
+        console.warn(`Storage write blocked for ${key}:`, e.message);
+        return false;
+    }
+}
+
+let currentSessionId = safeGetStorage('chatSessionId') || generateSessionId();
 
 // Generate unique session ID
 function generateSessionId() {
     const id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('chatSessionId', id);
+    safeSetStorage('chatSessionId', id);
     return id;
 }
 
@@ -135,6 +157,21 @@ async function sendMessage() {
         
         if (!response.ok) {
             const errorText = await response.text();
+            
+            // Check for 503 Service Unavailable
+            if (response.status === 503) {
+                const errorMsg = 'AI service is experiencing high demand. Please try again in a moment.';
+                showToast('⏳ Service busy - retrying in 5 seconds...', 'warning');
+                addMessage('assistant', `⏳ **Service Temporarily Busy**\n\n${errorMsg}\n\nThe system will auto-retry. You can also click "Generate" again after a moment.`);
+                
+                // Auto-retry after 5 seconds
+                setTimeout(() => {
+                    userInput.value = prompt;
+                    sendMessage();
+                }, 5000);
+                return;
+            }
+            
             throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         
@@ -149,6 +186,18 @@ async function sendMessage() {
             
             showToast(`✅ ${result.mode || 'Design'} generated successfully!`, 'success');
         } else {
+            // Check if error message indicates service unavailability
+            if (result.error && (result.error.includes('503') || result.error.includes('UNAVAILABLE') || result.error.includes('high demand'))) {
+                showToast('⏳ Service busy - retrying in 5 seconds...', 'warning');
+                addMessage('assistant', `⏳ **Service Temporarily Busy**\n\nThe AI service is currently experiencing high demand. The system will automatically retry shortly.\n\nYou can also try again manually if it continues.`);
+                
+                // Auto-retry after 5 seconds
+                setTimeout(() => {
+                    userInput.value = prompt;
+                    sendMessage();
+                }, 5000);
+                return;
+            }
             throw new Error(result.error || 'Generation failed');
         }
         
@@ -276,11 +325,11 @@ function saveToHistory(prompt, response, mode) {
     if (chatHistory.length > 15) chatHistory.pop();
     
     try {
-        localStorage.setItem('carDesignHistory', JSON.stringify(chatHistory));
+        safeSetStorage('carDesignHistory', JSON.stringify(chatHistory));
     } catch (e) {
         if (e.name === 'QuotaExceededError') {
             chatHistory = chatHistory.slice(0, 8);
-            localStorage.setItem('carDesignHistory', JSON.stringify(chatHistory));
+            safeSetStorage('carDesignHistory', JSON.stringify(chatHistory));
             showToast('Storage limit reached. Keeping only recent designs.', 'info');
         }
     }
@@ -290,7 +339,7 @@ function saveToHistory(prompt, response, mode) {
 
 // Load Chat History
 function loadChatHistory() {
-    const saved = localStorage.getItem('carDesignHistory');
+    const saved = safeGetStorage('carDesignHistory');
     if (saved) {
         try {
             chatHistory = JSON.parse(saved);
@@ -420,14 +469,14 @@ function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+    safeSetStorage('theme', newTheme);
     
     const toggleBtn = document.getElementById('themeToggle');
     if (toggleBtn) toggleBtn.textContent = newTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const savedTheme = safeGetStorage('theme', 'dark');
     document.documentElement.setAttribute('data-theme', savedTheme);
     const toggleBtn = document.getElementById('themeToggle');
     if (toggleBtn) toggleBtn.textContent = savedTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
