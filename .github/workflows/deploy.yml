@@ -1,0 +1,51 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 13.206.205.53
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        script_stop: true
+        script: |
+          cd ~/Futuristic-Car-Designer
+          
+          # Pull latest code
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Stop old containers
+          docker compose down || true
+          
+          # Build and run
+          docker compose up -d --build
+          
+          # Wait for startup
+          sleep 10
+          
+          # Health check with retry
+          for i in {1..5}; do
+            curl -f http://localhost:5000/health && break
+            echo "Waiting for backend..."
+            sleep 5
+          done
+          
+          # Cleanup unused Docker resources
+          docker system prune -af --volumes
+          
+          echo "Deployment successful!"
