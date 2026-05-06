@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://127.0.0.1:5000'; // Changed to 127.0.0.1 for better compatibility
+const API_BASE_URL = 'http://13.206.205.53:5000'; // Changed to 127.0.0.1 for better compatibility
 let chatHistory = [];
 
 // Safe localStorage getter
